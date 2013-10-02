@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+path {
+  stroke: none;
+}
+
+.lines {
+  stroke: #FFF;
+  fill: none;
+  stroke-width: 0.5px;
+  stroke-opacity: 0.5;
+}
+
+</style>
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<script>
+
+
+var HOST = 'http://zuriaga.cartodb.com/api/v2/sql'
+var SQL = 'select ward, the_geom, array_agg(num_crimes) as values, array_agg(date) as dates from chicago_aggrday group by ward, the_geom'
+
+var GEO = HOST + '?q=' + SQL + "&format=topojson"
+
+var width = 960,
+    height = 500;
+
+var rateById = d3.map();
+
+var projection = d3.geo.mercator()
+    .scale(1)
+    .translate([0, 0])
+
+var path = d3.geo.path()
+    .projection(projection);
+
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+queue()
+    .defer(d3.json, GEO)
+    .await(ready);
+
+function fitBounds(geojson, projection) {
+  var b = path.bounds(geojson),
+    s = .95 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height),
+    t = [(width - s * (b[1][0] + b[0][0])) / 2, (height - s * (b[1][1] + b[0][1])) / 2];
+
+  projection
+    .scale(s)
+    .translate(t);
+}
+
+
+function ready(error, geo) {
+
+
+  var geojson = Object.keys(geo.objects).map(function(g) { return topojson.feature(geo, geo.objects[g]); });
+  // create interpolation objects per feature
+  // with dates and values  
+
+  var maxValue = Number.MIN_VALUE;
+  var minValue = Number.MAX_VALUE;
+  var maxDate = Number.MIN_VALUE;
+  var minDate = Number.MAX_VALUE;
+
+  for(var i = 0; i < geojson.length; ++i) {
+    var g = geojson[i];
+    var dates = JSON.parse(
+        g.properties.dates
+          .replace('{', '[')
+          .replace('}', ']')
+        ).map(function(d) { return new Date(d); });
+    g.properties.val = d3.time.scale().domain(dates).range(g.properties.values).clamp(true);
+
+    var max = d3.max(g.properties.values);
+    var min = d3.min(g.properties.values);
+    maxValue =  max > maxValue ? max: maxValue;
+    minValue =  min < minValue ? min: minValue;
+
+    max = d3.max(dates);
+    min = d3.min(dates);
+    maxDate =  max > maxDate ? max: maxDate;
+    minDate =  min < minDate ? min: minDate;
+  }
+  geojson = { type: "FeatureCollection", features: geojson };
+
+  // generate color scale based on max min values 
+  var colorRange = s = d3.scale.linear()
+      .domain([minValue, maxValue])
+      .interpolate(d3.interpolateRgb)
+      .range(["#110000", "#FF0000"])
+
+  var dateScale = d3.time.scale().domain([minDate, maxDate])
+
+  fitBounds(geojson, projection)
+
+  var g = svg.append("g");
+
+  function _update(time) {
+    var geoms = g.selectAll("path")
+        .data(geojson.features)
+
+    geoms.enter().append("path")
+        .attr('fill', function(d) { 
+          return colorRange(d.properties.val(time));
+        })
+        .attr("d", path)
+
+    geoms.enter().append("path")
+      .attr("class", "lines")
+      .attr("d", path);
+
+    geoms.transition().duration(100).attr('fill', function(d) { 
+      return colorRange(d.properties.val(time));
+    })
+  }
+
+  var c = 0;
+  var NUM_TICKS = 100;
+  function tick() {
+    var time = dateScale.ticks(NUM_TICKS)[c]
+    console.log(c, time);
+    _update(time);
+    c = (c + 1) % NUM_TICKS;
+  }
+  tick();
+  setInterval(tick, 100);
+}
+
+</script>
