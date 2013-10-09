@@ -15,12 +15,27 @@ path {
 
 circle {
   fill: #FFF;
-  fill-opacity: 0.5;
+  fill-opacity: 0.75;
   stroke-width: 0.5px;
-  stroke-color: #000;
+  stroke: #000;
   stroke-opacity: 0.5;
 }
-
+.frame-offset-1 {
+  fill: none;
+  stroke-opacity: 0.5;
+}
+.frame-offset-2 {
+  fill: none;
+  stroke-opacity: 0.4;
+}
+.frame-offset-3 {
+  fill: none;
+  stroke-opacity: 0.2;
+}
+.frame-offset-4 {
+  fill: none;
+  stroke-opacity: 0.1;
+}
 </style>
 <body>
 <script src="http://d3js.org/d3.v3.min.js"></script>
@@ -72,6 +87,7 @@ function fitBounds(geojson, projection) {
 }
 
 var BUBBLES = true;
+var BUBBLE_TRAILS = true;
 var MIN_BUBBLE_SIZE = 4;
 var MAX_BUBBLE_SIZE = 30;
 
@@ -134,7 +150,7 @@ function ready(error, geo) {
 
   var g = svg.append("g");
 
-  function _update(time) {
+  function _update(time, dateTicks, currentTick) {
     var geoms = g.selectAll("path")
         .data(geojson.features)
 
@@ -158,21 +174,31 @@ function ready(error, geo) {
     // bubbles
     //
     if(BUBBLES) {
-      var bubble = g.selectAll("circle")
-          .data(geojson.features)
-      var circle = d3.svg.symbol().type('circle')
+      function addBubbles(data, _class, time) {
+        var bubble = g.selectAll("circle." + _class)
+            .data(geojson.features)
+        var circle = d3.svg.symbol().type('circle')
 
-      bubble.enter()
-        .append("circle")
-        .attr("r", function(d) { return bubbleSize(d.properties.val(time)); })
-        .attr({
-          cx: function(d) { 
-            return path.centroid(d)[0]; 
-          },
-          cy: function(d) { return path.centroid(d)[1]; }
-        })
+        bubble.enter()
+          .append("circle")
+          .attr('class', _class)
+          .attr("r", function(d) { return bubbleSize(d.properties.val(time)); })
+          .attr({
+            cx: function(d) { 
+              return path.centroid(d)[0]; 
+            },
+            cy: function(d) { return path.centroid(d)[1]; }
+          })
 
-      bubble.attr("r", function(d) { return bubbleSize(d.properties.val(time)); })
+        bubble.attr("r", function(d) { return bubbleSize(d.properties.val(time)); })
+      }
+      if (BUBBLE_TRAILS) {
+        addBubbles(geojson.features, 'frame-offset-0', time);
+        addBubbles(geojson.features, 'frame-offset-1', dateTicks[currentTick - 1]);
+        addBubbles(geojson.features, 'frame-offset-2', dateTicks[currentTick - 2]);
+        addBubbles(geojson.features, 'frame-offset-3', dateTicks[currentTick - 3]);
+        addBubbles(geojson.features, 'frame-offset-4', dateTicks[currentTick - 4]);
+      }
     }
 
   }
@@ -180,8 +206,9 @@ function ready(error, geo) {
   var c = 0;
   var NUM_TICKS = 51;
   function tick() {
-    var time = dateScale.ticks(NUM_TICKS)[c]
-    _update(time);
+    var dateTicks = dateScale.ticks(NUM_TICKS);
+    var time = dateTicks[c];
+    _update(time, dateTicks, c);
     c = (c + 1) % NUM_TICKS;
   }
   tick();
