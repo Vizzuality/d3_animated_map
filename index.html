@@ -192,8 +192,8 @@ function ready(error, geo) {
 
         bubble.attr("r", function(d) { return bubbleSize(d.properties.val(time)); })
       }
+      addBubbles(geojson.features, 'frame-offset-0', time);
       if (BUBBLE_TRAILS) {
-        addBubbles(geojson.features, 'frame-offset-0', time);
         addBubbles(geojson.features, 'frame-offset-1', dateTicks[currentTick - 1]);
         addBubbles(geojson.features, 'frame-offset-2', dateTicks[currentTick - 2]);
         addBubbles(geojson.features, 'frame-offset-3', dateTicks[currentTick - 3]);
