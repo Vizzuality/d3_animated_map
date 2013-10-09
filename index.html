@@ -81,7 +81,7 @@ function ready(error, geo) {
         g.properties.dates
           .replace('{', '[')
           .replace('}', ']')
-        ).map(function(d) { return new Date(d); });
+        ).map(function(d) { return new Date(d.replace(/-/g, '/')); });
 
     g.properties.val = d3.time.scale().domain(dates).range(g.properties.values).clamp(true);
 
@@ -94,9 +94,6 @@ function ready(error, geo) {
     min = d3.min(dates);
     maxDate =  max > maxDate ? max: maxDate;
     minDate =  min < minDate ? min: minDate;
-
-    console.log(minDate)
-    console.log(maxDate)
 
   }
 
@@ -117,7 +114,6 @@ function ready(error, geo) {
 
   var dateScale = d3.time.scale().domain([minDate, maxDate])
 
-  // debugger;
 
   fitBounds(geojson, projection)
 
@@ -148,7 +144,6 @@ function ready(error, geo) {
   var NUM_TICKS = 51;
   function tick() {
     var time = dateScale.ticks(NUM_TICKS)[c]
-    console.log(c, time);
     _update(time);
     c = (c + 1) % NUM_TICKS;
   }
