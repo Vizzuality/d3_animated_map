@@ -13,6 +13,14 @@ path {
   stroke-opacity: 0.5;
 }
 
+circle {
+  fill: #FFF;
+  fill-opacity: 0.5;
+  stroke-width: 0.5px;
+  stroke-color: #000;
+  stroke-opacity: 0.5;
+}
+
 </style>
 <body>
 <script src="http://d3js.org/d3.v3.min.js"></script>
@@ -63,6 +71,9 @@ function fitBounds(geojson, projection) {
     .translate(t);
 }
 
+var BUBBLES = true;
+var MIN_BUBBLE_SIZE = 4;
+var MAX_BUBBLE_SIZE = 30;
 
 function ready(error, geo) {
 
@@ -112,6 +123,10 @@ function ready(error, geo) {
       .interpolate(d3.interpolateRgb)
       .range(["#FFFFB2", "#B10026"])
 
+  var bubbleSize = d3.scale.linear()
+      .domain([minValue, maxValue])
+      .range([MIN_BUBBLE_SIZE, MAX_BUBBLE_SIZE])
+
   var dateScale = d3.time.scale().domain([minDate, maxDate])
 
 
@@ -138,6 +153,28 @@ function ready(error, geo) {
     })
 
     yearLabel.text(time.getFullYear());
+
+    //
+    // bubbles
+    //
+    if(BUBBLES) {
+      var bubble = g.selectAll("circle")
+          .data(geojson.features)
+      var circle = d3.svg.symbol().type('circle')
+
+      bubble.enter()
+        .append("circle")
+        .attr("r", function(d) { return bubbleSize(d.properties.val(time)); })
+        .attr({
+          cx: function(d) { 
+            return path.centroid(d)[0]; 
+          },
+          cy: function(d) { return path.centroid(d)[1]; }
+        })
+
+      bubble.attr("r", function(d) { return bubbleSize(d.properties.val(time)); })
+    }
+
   }
 
   var c = 0;
