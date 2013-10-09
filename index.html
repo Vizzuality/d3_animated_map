@@ -21,10 +21,14 @@ path {
 <script>
 
 
-var HOST = 'http://zuriaga.cartodb.com/api/v2/sql'
-var SQL = 'select ward, the_geom, array_agg(num_crimes) as values, array_agg(date) as dates from chicago_aggrday group by ward, the_geom'
+var HOST = 'http://saleiva.cartodb.com/api/v2/sql'
+// var SQL = 'select ward, the_geom, array_agg(num_crimes) as values, array_agg(date) as dates from chicago_aggrday group by ward, the_geom'
+
+var SQL = "SELECT array_agg(a.value) as values, array_agg(a.date) as dates, b.the_geom FROM idealista_districts_transposed a, madrid_distritos b WHERE a.distrito = lower(b.nombre02) GROUP BY a.distrito, b.the_geom"
 
 var GEO = HOST + '?q=' + SQL + "&format=topojson"
+
+var FRAME_TIME = 100;
 
 var width = 960,
     height = 500;
@@ -43,6 +47,8 @@ var svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height);
 
+var yearLabel = svg.append("text");
+
 queue()
     .defer(d3.json, GEO)
     .await(ready);
@@ -60,7 +66,6 @@ function fitBounds(geojson, projection) {
 
 function ready(error, geo) {
 
-
   var geojson = Object.keys(geo.objects).map(function(g) { return topojson.feature(geo, geo.objects[g]); });
   // create interpolation objects per feature
   // with dates and values  
@@ -77,6 +82,7 @@ function ready(error, geo) {
           .replace('{', '[')
           .replace('}', ']')
         ).map(function(d) { return new Date(d); });
+
     g.properties.val = d3.time.scale().domain(dates).range(g.properties.values).clamp(true);
 
     var max = d3.max(g.properties.values);
@@ -88,16 +94,30 @@ function ready(error, geo) {
     min = d3.min(dates);
     maxDate =  max > maxDate ? max: maxDate;
     minDate =  min < minDate ? min: minDate;
+
+    console.log(minDate)
+    console.log(maxDate)
+
   }
+
+  yearLabel
+    .text('loading...')
+    .attr("font-family", "sans-serif")
+    .attr("font-size", "20px")
+    .attr("x", 100)
+    .attr("y", 100);
+
   geojson = { type: "FeatureCollection", features: geojson };
 
   // generate color scale based on max min values 
   var colorRange = s = d3.scale.linear()
       .domain([minValue, maxValue])
       .interpolate(d3.interpolateRgb)
-      .range(["#110000", "#FF0000"])
+      .range(["#FFFFB2", "#B10026"])
 
   var dateScale = d3.time.scale().domain([minDate, maxDate])
+
+  // debugger;
 
   fitBounds(geojson, projection)
 
@@ -117,13 +137,15 @@ function ready(error, geo) {
       .attr("class", "lines")
       .attr("d", path);
 
-    geoms.transition().duration(100).attr('fill', function(d) { 
+    geoms.transition().duration(FRAME_TIME).attr('fill', function(d) { 
       return colorRange(d.properties.val(time));
     })
+
+    yearLabel.text(time.getFullYear());
   }
 
   var c = 0;
-  var NUM_TICKS = 100;
+  var NUM_TICKS = 51;
   function tick() {
     var time = dateScale.ticks(NUM_TICKS)[c]
     console.log(c, time);
@@ -131,7 +153,7 @@ function ready(error, geo) {
     c = (c + 1) % NUM_TICKS;
   }
   tick();
-  setInterval(tick, 100);
+  setInterval(tick, FRAME_TIME);
 }
 
 </script>
