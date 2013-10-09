@@ -51,10 +51,10 @@ var SQL = "SELECT array_agg(a.value) as values, array_agg(a.date) as dates, b.th
 
 var GEO = HOST + '?q=' + SQL + "&format=topojson"
 
-var FRAME_TIME = 100;
+var FRAME_TIME = 600;
 
 var width = 960,
-    height = 500;
+    height = 640;
 
 var rateById = d3.map();
 
@@ -86,8 +86,8 @@ function fitBounds(geojson, projection) {
     .translate(t);
 }
 
-var BUBBLES = true;
-var BUBBLE_TRAILS = true;
+var BUBBLES = false;
+var BUBBLE_TRAILS = false;
 var MIN_BUBBLE_SIZE = 4;
 var MAX_BUBBLE_SIZE = 30;
 
@@ -137,7 +137,7 @@ function ready(error, geo) {
   var colorRange = s = d3.scale.linear()
       .domain([minValue, maxValue])
       .interpolate(d3.interpolateRgb)
-      .range(["#FFFFB2", "#B10026"])
+      .range(["#FEE8C8", "#E34A33"])
 
   var bubbleSize = d3.scale.linear()
       .domain([minValue, maxValue])
@@ -212,7 +212,7 @@ function ready(error, geo) {
     c = (c + 1) % NUM_TICKS;
   }
   tick();
-  setInterval(tick, FRAME_TIME);
+  setInterval(tick, 300);
 }
 
 </script>
