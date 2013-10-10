@@ -1,0 +1,34 @@
+path {
+  stroke: none;
+}
+
+.lines {
+  stroke: #FFF;
+  fill: none;
+  stroke-width: 0.5px;
+  stroke-opacity: 0.5;
+}
+
+circle {
+  fill: #FFF;
+  fill-opacity: 0.75;
+  stroke-width: 0.5px;
+  stroke: #000;
+  stroke-opacity: 0.5;
+}
+.frame-offset-1 {
+  fill: none;
+  stroke-opacity: 0.5;
+}
+.frame-offset-2 {
+  fill: none;
+  stroke-opacity: 0.4;
+}
+.frame-offset-3 {
+  fill: none;
+  stroke-opacity: 0.2;
+}
+.frame-offset-4 {
+  fill: none;
+  stroke-opacity: 0.1;
+}
