@@ -1,5 +1,7 @@
 .d3-slider {
     position: relative;
+    top: 600px;
+    left: 10px;
     font-family: Verdana,Arial,sans-serif;
     font-size: 1.1em;
     border: 1px solid #aaaaaa;
@@ -8,6 +10,7 @@
 
 .d3-slider-horizontal {
     height: .8em;
+    width: 90%;
 }  
 
 .d3-slider-vertical {
