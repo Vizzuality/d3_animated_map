@@ -26,6 +26,7 @@ var svg = d3.select("body").append("svg")
     .attr("height", height);
 
 var yearLabel = svg.append("text");
+var playInt;
 
 queue()
     .defer(d3.json, GEO)
@@ -45,6 +46,9 @@ var BUBBLES = false;
 var BUBBLE_TRAILS = false;
 var MIN_BUBBLE_SIZE = 4;
 var MAX_BUBBLE_SIZE = 30;
+var NUM_TICKS = 51;
+
+var c = 0;
 
 function ready(error, geo) {
 
@@ -93,7 +97,7 @@ function ready(error, geo) {
   var colorRange = s = d3.scale.linear()
       .domain([minValue, maxValue])
       .interpolate(d3.interpolateRgb)
-      .range(["#FEE8C8", "#E34A33"])
+      .range(["#FFEDA0", "#ff0000"])
 
   var bubbleSize = d3.scale.linear()
       .domain([minValue, maxValue])
@@ -101,17 +105,45 @@ function ready(error, geo) {
 
   var dateScale = d3.time.scale().domain([minDate, maxDate])
 
-  // SLIDER
-  slider = d3.select('#slider').call(d3.slider().axis(true).min(minDate.getFullYear()).max(maxDate.getFullYear()).step(1));
-  window.addEventListener("valueChanged", function(o){
-    console.log(o);
-  });
+
+  slider = d3.slider()
+    .axis(true)
+    .min(minDate.getFullYear())
+    .max(maxDate.getFullYear())
+    .step(1)
+    .on('slide', function(e, value) { 
+      _set(value);
+    })
+    .on('dragstart', function(e){
+      clearInterval(playInt);
+    })
+    .on('dragend', function(e, value){
+      _set(value);
+      // playInt = setInterval(tick, FRAME_TIME/2);
+    })
+  d3.select('#slider').call(slider);
 
   fitBounds(geojson, projection)
 
   var g = svg.append("g");
 
+  var rangeYears = [];
+  for (var i = minDate.getFullYear(); i <= maxDate.getFullYear(); i++) {
+    rangeYears.push(i)
+  };
+
+  function _set(value){
+    var _d =  new Date(value,00,01);
+    var _dateTicks = dateScale.ticks(NUM_TICKS/2);
+    c = rangeYears.indexOf(value)*4 > 51 ? 51 : rangeYears.indexOf(value)*4;
+    console.log(c)
+    _update(_d,_dateTicks,c);
+  }
+
   function _update(time, dateTicks, currentTick) {
+
+    slider.value(time.getFullYear());
+
     var geoms = g.selectAll("path")
         .data(geojson.features)
 
@@ -164,14 +196,12 @@ function ready(error, geo) {
 
   }
 
-  var c = 0;
-  var NUM_TICKS = 51;
   function tick() {
     var dateTicks = dateScale.ticks(NUM_TICKS);
     var time = dateTicks[c];
-    _update(time, dateTicks, c);
     c = (c + 1) % NUM_TICKS;
+    _update(time, dateTicks, c);
   }
   tick();
-  setInterval(tick, 300);
+  // playInt = setInterval(tick, FRAME_TIME);
 }

@@ -16,12 +16,13 @@ d3.slider = function module() {
       orientation = "horizontal",
       axis = false,
       margin = 50,
+      tick = 0,
       value,
       scale; 
 
   // Private variables
   var axisScale,
-      dispatch = d3.dispatch("slide"),
+      dispatch = d3.dispatch("slide","dragstart","drag","dragend"),
       formatPercent = d3.format(".2%"),
       tickFormat = d3.format(".0"),
       sliderLength;
@@ -54,7 +55,9 @@ d3.slider = function module() {
       if (orientation === "horizontal") {
 
         div.on("click", onClickHorizontal);
+        drag.on("dragstart", onDragStart);
         drag.on("drag", onDragHorizontal);
+        drag.on("dragend", onDragEnd)
         handle.style("left", formatPercent(scale(value)));
         sliderLength = parseInt(div.style("width"), 10);
 
@@ -70,7 +73,6 @@ d3.slider = function module() {
       if (axis) {
         createAxis(div);
       }
-
 
       function createAxis(dom) {
 
@@ -134,30 +136,30 @@ d3.slider = function module() {
 
       }
 
-
       // Move slider handle on click/drag
       function moveHandle(pos) {
-
         var newValue = stepValue(scale.invert(pos / sliderLength));
+        changeValue(newValue);
+      }
+
+      var changeValue = slider.changeValue = function(newValue) {
 
         if (value !== newValue) {
           var oldPos = formatPercent(scale(stepValue(value))),
               newPos = formatPercent(scale(stepValue(newValue))),
               position = (orientation === "horizontal") ? "left" : "bottom";
 
-          dispatch.slide(d3.event.sourceEvent || d3.event, value = newValue);
+          dispatch.slide(d3.event, value = newValue);
 
           if (animate) {
             handle.transition()
-                .styleTween(position, function() { return d3.interpolate(oldPos, newPos); })
-                .duration((typeof animate === "number") ? animate : 250);
+              .styleTween(position, function() { return d3.interpolate(oldPos, newPos); })
+              .duration((typeof animate === "number") ? animate : 250);
           } else {
             handle.style(position, newPos);          
           }
         }
-
       }
-
 
       // Calculate nearest step value
       function stepValue(val) {
@@ -182,11 +184,22 @@ d3.slider = function module() {
         moveHandle(sliderLength - d3.event.offsetY || d3.event.layerY);
       }
 
+      function onDragStart() { 
+        dispatch.dragstart(d3.event);
+      }
+
       function onDragHorizontal() {
         moveHandle(Math.max(0, Math.min(sliderLength, d3.event.x)));
+        dispatch.drag(d3.event);
+      }
+
+      function onDragEnd() {
+        var pos = Math.max(0, Math.min(sliderLength, d3.event.sourceEvent.x));
+        dispatch.dragend(d3.event, stepValue(scale.invert(pos / sliderLength)));
       }
 
       function onDragVertical() {
+        dispatch.drag(d3.event);
         moveHandle(sliderLength - Math.max(0, Math.min(sliderLength, d3.event.y)));
       }      
 
@@ -242,7 +255,8 @@ d3.slider = function module() {
   }  
 
   slider.value = function(_) {
-    if (!arguments.length) return value;
+    if (!arguments.length) return value;    
+    slider.changeValue && slider.changeValue(_);
     value = _;
     return slider;
   }  
@@ -250,6 +264,12 @@ d3.slider = function module() {
   slider.scale = function(_) {
     if (!arguments.length) return scale;
     scale = _;
+    return slider;
+  }  
+
+  slider.tick = function(_) {
+    if (!arguments.length) return tick;
+    tick = _;
     return slider;
   }  
 
